@@ -7,9 +7,15 @@ using System.Threading.Tasks;
 
 namespace EcoShopApi.Application.Services.Interface
 {
-   public interface ITokenService
+    public interface ITokenService
     {
         string CreateAccessToken(AppUser user);
         RefreshToken CreateRefreshToken();
+        //login
+
+        //register
+
+
+
     }
 }
