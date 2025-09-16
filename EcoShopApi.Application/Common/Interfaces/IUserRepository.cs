@@ -9,5 +9,6 @@ namespace EcoShopApi.Application.Common.Interfaces
 {
     public interface IUserRepository : IGenaricRepository<AppUser>
     {
+
     }
 }
