@@ -1,45 +1,74 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using EcoShopApi.Application.Services.Interface;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using EcoShopApi.Domain.Entities;
+using System.Threading.Tasks;
 
 namespace EcoShopApi.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
+    [ApiController]
     public class ProductsController : ControllerBase
     {
-      
-        // private readonly IProductService _productService;
+        private readonly IProductService _productService;
+        public ProductsController(IProductService productService)
+        {
+            _productService = productService;
+        }
 
-        //public ProductController(IProductService productService) => _productService = productService;
 
-        //[HttpPost]
-        //public async Task<IActionResult> Create(ProductCreateDto dto)
-        //{
-        //    // Validate unique code, save image to wwwroot/images, store path
-        //    var product = await _productService.CreateAsync(dto);
-        //    return CreatedAtAction(nameof(GetByCode), new { code = product.ProductCode }, product);
-        //}
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
 
-        //[HttpGet]
-        //public async Task<IActionResult> GetAll() => Ok(await _productService.GetAllAsync());
+            var products = await _productService.GetProductsAsync();
+            return Ok(products);
+        }
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var product = await _productService.GetProductByIdAsync(id);
+            if (product == null)
+            {
+                return NotFound();
+            }
+            return Ok(product);
+        }
+        [HttpPost]
+        public IActionResult Create([FromBody] Product product)
+        {
+            _productService.CreateProductAsync(product);
+            return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
+        }
+        [HttpPut("{id}")]
+        public IActionResult Update(int id, [FromBody] Product product)
+        {
+            if (id != product.Id)
+            {
+                return BadRequest();
+            }
+            try
+            {
+                _productService.UpdateProductAsync(product);
+            }
+            catch (System.Exception)
+            {
+                return NotFound();
+            }
+            return NoContent();
+        }
+        [HttpDelete("{id}")]
+        public IActionResult Delete(int id)
+        {
+            var product = _productService.GetProductByIdAsync(id).Result;
+            if (product == null)
+            {
+                return NotFound();
+            }
+            _productService.DeleteProductAsync(id);
+            return NoContent();
+        }
 
-        //[HttpGet("{code}")]
-        //public async Task<IActionResult> GetByCode(string code) => Ok(await _productService.GetByCodeAsync(code));
 
-        //[HttpPut("{code}")]
-        //public async Task<IActionResult> Update(string code, ProductUpdateDto dto)
-        //{
-        //    await _productService.UpdateAsync(code, dto);
-        //    return NoContent();
-        //}
-
-        //[HttpDelete("{code}")]
-        //public async Task<IActionResult> Delete(string code)
-        //{
-        //    await _productService.DeleteAsync(code);
-        //    return NoContent();
-        //}
     }
 }
-    
