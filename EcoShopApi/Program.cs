@@ -1,4 +1,9 @@
+using EcoShopApi.Application.Common.Interfaces;
+using EcoShopApi.Application.Services.Implementation;
+using EcoShopApi.Application.Services.Interface;
 using EcoShopApi.Infrastructure.Data;
+using EcoShopApi.Infrastructure.Repository;
+using EcoShopApi.Middlewares;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -40,25 +45,34 @@ builder.Services.AddControllers();
 //builder.Services.AddOpenApi();
 
 // Services: TokenService, Repositories, etc.
-//builder.Services.AddScoped<ITokenService, TokenService>();
-//builder.Services.AddScoped<IUserRepository, UserRepository>();
-//builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IProductService, ProductService>();
 
 var app = builder.Build();
+
+app.UseMiddleware<ExceptionMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    //app.MapOpenApi();
+    app.UseDeveloperExceptionPage();
+    // app.UseOpenApi();
+    // app.UseSwaggerUi3();
 }
+app.UseHttpsRedirection();
 
+app.UseStaticFiles();
+app.UseRouting();
+
+app.UseCors("CorsPolicy");
+app.UseAuthentication();
 
 app.UseAuthorization();
-
 
 app.MapControllers();
-
-app.UseAuthentication();
-app.UseAuthorization();
 
 app.Run();
