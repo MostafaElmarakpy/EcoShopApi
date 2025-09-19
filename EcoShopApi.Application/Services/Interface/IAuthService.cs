@@ -15,10 +15,13 @@ namespace EcoShopApi.Application.Services.Interface
         Task<bool> EmailExistsAsync(string email);
         Task<bool> CheckPasswordAsync(AppUser user, string password);
         Task CreateUserAsync(AppUser user, string password);
+        Task UpdateUserAsync(AppUser user);
+        // RefreshAccessTokenAsync
+        Task<UserDto?> RefreshAccessTokenAsync(string refreshToken);
+
+        Task<(string accessToken, string refreshToken)> GenerateTokensAsync(AppUser user);
 
     }
 
-    public class Task<T1, T2>
-    {
-    }
+
 }

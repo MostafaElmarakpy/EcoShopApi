@@ -11,9 +11,8 @@ namespace EcoShopApi.Application.Services.Interface
     {
         string CreateAccessToken(AppUser user);
         RefreshToken CreateRefreshToken();
-        //login
+        bool ValidateRefreshToken(RefreshToken token, string refreshToken);
 
-        //register
 
 
 
