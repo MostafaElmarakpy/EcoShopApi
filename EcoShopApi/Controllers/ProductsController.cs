@@ -24,6 +24,7 @@ namespace EcoShopApi.Controllers
             var products = await _productService.GetProductsAsync();
             return Ok(products);
         }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -34,7 +35,8 @@ namespace EcoShopApi.Controllers
             }
             return Ok(product);
         }
-        [HttpPost]
+        [HttpPost("create-product")]
+
         public IActionResult Create([FromBody] Product product)
         {
             _productService.CreateProductAsync(product);
