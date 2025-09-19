@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.13.35818.85 d17.13
+VisualStudioVersion = 17.13.35818.85
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoShopApi", "EcoShopApi\EcoShopApi.csproj", "{DEA900C7-F975-437E-9D9D-DAB88FAD2C07}"
 EndProject
@@ -10,6 +10,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoShopApi.Infrastructure", "EcoShopApi.Infrastructure\EcoShopApi.Infrastructure.csproj", "{844E74C5-0432-4901-BC3F-0B828F8C0F14}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoShopApi.Domain", "EcoShopApi.Domain\EcoShopApi.Domain.csproj", "{B6E55212-7D34-4632-AB1A-3C786620F0CF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoShopApi.Tests.xUnit", "EcoShopApi.Tests.xUnit\EcoShopApi.Tests.xUnit.csproj", "{7F776A9E-9557-4595-B934-6D8B48C9899C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{B6E55212-7D34-4632-AB1A-3C786620F0CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B6E55212-7D34-4632-AB1A-3C786620F0CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B6E55212-7D34-4632-AB1A-3C786620F0CF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F776A9E-9557-4595-B934-6D8B48C9899C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F776A9E-9557-4595-B934-6D8B48C9899C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F776A9E-9557-4595-B934-6D8B48C9899C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F776A9E-9557-4595-B934-6D8B48C9899C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
