@@ -11,7 +11,6 @@ namespace EcoShopApi.Domain.Entities
     public class Product
     {
         public int Id { get; set; }
-        public string Category { get; set; } = null!;
         public string ProductCode { get; set; } = null!;
         public string Name { get; set; } = null!;
         public string? ImagePath { get; set; }
@@ -20,5 +19,8 @@ namespace EcoShopApi.Domain.Entities
         public double DiscountRate { get; set; }
         [NotMapped]
         public IFormFile? Image { get; set; }
+        public int CategoryId { get; set; }
+        // Navigation property 
+        public virtual Category? Category { get; set; }
     }
 }
