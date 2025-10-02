@@ -23,16 +23,19 @@ namespace EcoShopApi.Application.Services.Implementation
         }
         public async Task<Product> GetProductByIdAsync(int id)
         {
+            EnsureProductRepositoryInitialized();
             return await Task.FromResult(_unitOfWork.Product.Get(p => p.Id == id));
         }
 
         public void CreateProductAsync(Product productToCreate)
         {
+            EnsureProductRepositoryInitialized();
             _unitOfWork.Product.Add(productToCreate);
             _unitOfWork.Save();
         }
         public void UpdateProductAsync(Product product)
         {
+            EnsureProductRepositoryInitialized();
             var existingProduct = _unitOfWork.Product.Get(p => p.Id == product.Id);
             if (existingProduct == null)
             {
@@ -57,6 +60,7 @@ namespace EcoShopApi.Application.Services.Implementation
             existingProduct.MinimumQuantity = product.MinimumQuantity;
             existingProduct.DiscountRate = product.DiscountRate;
             existingProduct.ImagePath = product.ImagePath;
+            existingProduct.CategoryId = product.CategoryId;
 
             _unitOfWork.Product.Update(existingProduct);
             _unitOfWork.Save();
@@ -75,7 +79,15 @@ namespace EcoShopApi.Application.Services.Implementation
         }
         public async Task<IReadOnlyList<Product>> GetProductsAsync()
         {
+            EnsureProductRepositoryInitialized();
             return await Task.FromResult(_unitOfWork.Product.GetAll().ToList());
+        }
+        private void EnsureProductRepositoryInitialized()
+        {
+            if (_unitOfWork.Product == null)
+            {
+                throw new InvalidOperationException("Product repository not initialized in UnitOfWork.");
+            }
         }
         private void DeleteImage(string imagePath)
         {
