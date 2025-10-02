@@ -18,6 +18,10 @@ namespace EcoShopApi.Infrastructure.Repository
         public UnitOfWork(ApplicationDbContext dbContext)
         {
             _dbContext = dbContext;
+
+            User = new UserRepository(_dbContext);
+            Product = new ProductRepository(_dbContext);
+
         }
 
 
