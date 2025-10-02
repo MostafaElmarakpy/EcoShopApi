@@ -15,7 +15,5 @@ namespace EcoShopApi.Domain.Entities
         // navagation property
         public virtual ICollection<Product>? Products { get; set; }
 
-
-
     }
 }
