@@ -2,7 +2,9 @@
 using EcoShopApi.Application.Common.Interfaces;
 using EcoShopApi.Application.Services.Interface;
 using EcoShopApi.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 
@@ -18,27 +20,30 @@ namespace EcoShopApi.Controllers
             _authService = authService;
         }
 
+
         [HttpPost("login")]
+        [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
             try
             {
                 if (!ModelState.IsValid) return BadRequest(ModelState);
 
-                var user = await _authService.GetUserByNameAsync(loginDto.UserName);
-                if (user == null || !await _authService.CheckPasswordAsync(user, loginDto.Password))
-                    return Unauthorized(new { Message = "Invalid username or password" });
+                //var user = await _userManager.FindByEmailAsync(loginDto.Email);
+                var user = await _authService.GetUserByEmailAsync(loginDto.Email);
+                if (user == null) return BadRequest(new { Message = "User not found" });
 
-                // Generate both access and refresh tokens
-                var tokens = await _authService.GenerateTokensAsync(user);
+                var result = await _authService.CheckPasswordAsync(user, loginDto.Password);
+                if (!result) return BadRequest(new { Message = "Password is incorrect" });
 
+                //generate token
                 return Ok(new UserDto
                 {
-                    DisplayName = user.DisplayName,
+                    DisplayName = user.UserName,
                     Email = user.Email,
-                    Token = tokens.accessToken,
-                    RefreshToken = tokens.refreshToken
+                    Token = await _authService.GenerateJwtTokenAsync(user),
                 });
+
             }
             catch (Exception ex)
             {
@@ -48,46 +53,39 @@ namespace EcoShopApi.Controllers
 
 
         [HttpPost("register")]
+        [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
         {
-            try
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            if (await _authService.UserExistsAsync(registerDto.UserName))
+                return BadRequest(new { Message = "Username is already registered" });
+
+            if (await _authService.EmailExistsAsync(registerDto.Email))
+                return BadRequest(new { Message = "Email is already registered" });
+
+            var user = new AppUser
             {
-                if (!ModelState.IsValid) return BadRequest(ModelState);
+                UserName = registerDto.UserName,
+                Email = registerDto.Email,
+                EmailConfirmed = true,
+                DisplayName = registerDto.UserName ?? registerDto.UserName
+            };
 
-                if (await _authService.UserExistsAsync(registerDto.UserName))
-                    return BadRequest(new { Message = "Username is already taken" });
+            var result = await _authService.CreateUserAsync(user, registerDto.Password);
 
-                if (await _authService.EmailExistsAsync(registerDto.Email))
-                    return BadRequest(new { Message = "Email is already registered" });
-
-                var user = new AppUser
-                {
-                    UserName = registerDto.UserName,
-                    Email = registerDto.Email,
-                    DisplayName = registerDto.UserName
-                };
-
-                await _authService.CreateUserAsync(user, registerDto.Password);
-
-
-                // Generate both access and refresh tokens
-                var tokens = await _authService.GenerateTokensAsync(user);
-
-                return Ok(new UserDto
-                {
-                    DisplayName = user.DisplayName,
-                    Email = user.Email,
-                    Token = tokens.accessToken,
-                    RefreshToken = tokens.refreshToken
-                });
-            }
-            catch (Exception ex)
+            if (!result.Succeeded)
             {
-                return Problem(ex.Message);
+                return BadRequest(new { Errors = result.Errors.Select(e => e.Description) });
             }
+
+            return Ok(new UserDto
+            {
+                DisplayName = user.UserName,
+                Email = user.Email,
+                Token = await _authService.GenerateJwtTokenAsync(user)
+            });
         }
-
-
 
 
         [HttpPost("refresh-token")]
@@ -98,6 +96,7 @@ namespace EcoShopApi.Controllers
                 if (!ModelState.IsValid) return BadRequest(ModelState);
 
                 var tokens = await _authService.RefreshAccessTokenAsync(request.Token);
+                //var tokens = await _authService.GenerateRefreshTokenAsync(request.Token);
 
                 if (tokens == null) return Unauthorized(new { Message = "Invalid or expired refresh token" });
 
@@ -114,6 +113,8 @@ namespace EcoShopApi.Controllers
                 return Problem(ex.Message);
             }
         }
+
+
 
     }
 }
