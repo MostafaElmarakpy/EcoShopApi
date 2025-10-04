@@ -9,12 +9,13 @@ namespace EcoShopApi.Application.Services.Interface
 {
     public interface IProductService
     {
+        Task<IReadOnlyList<Product>> GetProductsAsync();
         Task<Product> GetProductByIdAsync(int id);
+
         void CreateProductAsync(Product productToCreate);
         void UpdateProductAsync(Product product);
         void DeleteProductAsync(int id);
 
-        Task<IReadOnlyList<Product>> GetProductsAsync();
 
     }
 }

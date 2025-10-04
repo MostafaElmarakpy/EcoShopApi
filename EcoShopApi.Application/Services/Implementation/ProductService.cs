@@ -2,12 +2,10 @@
 using EcoShopApi.Application.Services.Interface;
 using EcoShopApi.Domain.Entities;
 using System;
-
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -23,19 +21,16 @@ namespace EcoShopApi.Application.Services.Implementation
         }
         public async Task<Product> GetProductByIdAsync(int id)
         {
-            EnsureProductRepositoryInitialized();
             return await Task.FromResult(_unitOfWork.Product.Get(p => p.Id == id));
         }
 
         public void CreateProductAsync(Product productToCreate)
         {
-            EnsureProductRepositoryInitialized();
             _unitOfWork.Product.Add(productToCreate);
             _unitOfWork.Save();
         }
         public void UpdateProductAsync(Product product)
         {
-            EnsureProductRepositoryInitialized();
             var existingProduct = _unitOfWork.Product.Get(p => p.Id == product.Id);
             if (existingProduct == null)
             {
@@ -79,16 +74,9 @@ namespace EcoShopApi.Application.Services.Implementation
         }
         public async Task<IReadOnlyList<Product>> GetProductsAsync()
         {
-            EnsureProductRepositoryInitialized();
             return await Task.FromResult(_unitOfWork.Product.GetAll().ToList());
         }
-        private void EnsureProductRepositoryInitialized()
-        {
-            if (_unitOfWork.Product == null)
-            {
-                throw new InvalidOperationException("Product repository not initialized in UnitOfWork.");
-            }
-        }
+       
         private void DeleteImage(string imagePath)
         {
             if (string.IsNullOrEmpty(imagePath))
