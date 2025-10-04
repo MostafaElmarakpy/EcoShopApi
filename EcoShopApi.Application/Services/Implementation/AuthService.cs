@@ -19,8 +19,8 @@ namespace EcoShopApi.Application.Services.Implementation
     public class AuthService : IAuthService
     {
         private readonly UserManager<AppUser> _userManager;
-        private readonly IConfiguration _configuration;
         private readonly ITokenService _tokenService;
+        private readonly IConfiguration _configuration;
 
 
         public AuthService(
@@ -28,8 +28,8 @@ namespace EcoShopApi.Application.Services.Implementation
             ITokenService tokenService,
             IConfiguration configuration)
         {
-            _tokenService = tokenService;
             _userManager = userManager;
+            _tokenService = tokenService;
             _configuration = configuration;
         }
 
@@ -68,26 +68,69 @@ namespace EcoShopApi.Application.Services.Implementation
             return await _userManager.CheckPasswordAsync(user, password);
         }
 
-        public Task CreateUserAsync(AppUser user, string password)
+        public async Task<IdentityResult> CreateUserAsync(AppUser user, string password)
         {
-            var result = _userManager.CreateAsync(user, password);
-            if (!result.Result.Succeeded)
-            {
-                throw new Exception($"User creation failed: {string.Join(", ", result.Result.Errors.Select(e => e.Description))}");
-            }
+            var result = await _userManager.CreateAsync(user, password);
             return result;
         }
 
-        public async Task<(string accessToken, string refreshToken)> GenerateTokensAsync(AppUser user)
-
+        public async Task<AppUser> GetUserByEmailAsync(string email)
         {
-            var accessToken = _tokenService.CreateAccessToken(user);
-            var refreshToken = _tokenService.CreateRefreshToken();
-            user.RefreshTokens.Add(refreshToken);
-            await UpdateUserAsync(user);
-            return (accessToken, refreshToken.Token);
+
+            if (string.IsNullOrWhiteSpace(email)) return null;
+            return await _userManager.FindByEmailAsync(email);
+
+            //get by email by user manager and add validation
+            //if (string.IsNullOrEmpty(email)) throw new ArgumentException("Email cannot be null or empty.", nameof(email));
+
+            //var user = await _userManager.FindByEmailAsync(email);
+            //if (user == null)
+            //    throw new InvalidOperationException($"User with email '{email}' not found.");
+            //return user;
         }
 
+        public async Task<string> GenerateJwtTokenAsync(AppUser user)
+        {
+            var jwtSettings = _configuration.GetSection("Jwt");
+            var key = Encoding.UTF8.GetBytes(jwtSettings["Key"] ?? throw new InvalidOperationException("JWT Key not configured"));
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
+                new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
+                new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
+            };
+
+            // Add user roles to claims
+            var roles = await _userManager.GetRolesAsync(user);
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddMinutes(int.Parse(jwtSettings["AccessTokenMinutes"] ?? "15")),
+                Issuer = jwtSettings["Issuer"],
+                Audience = jwtSettings["Audience"],
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
+        }
+
+        public Task<string> GenerateRefreshTokenAsync()
+        {
+            var randomNumber = new byte[64];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(randomNumber);
+            return Task.FromResult(Convert.ToBase64String(randomNumber));
+        }
         public async Task<UserDto?> RefreshAccessTokenAsync(string refreshToken) // دالة جديدة للـ Refresh
         {
             var user = await GetUserByRefreshTokenAsync(refreshToken);
