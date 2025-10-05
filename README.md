@@ -170,7 +170,6 @@ erDiagram
         string UserName
         string Email
         string DisplayName
-        ...
     }
     Category {
         int Id PK
@@ -183,14 +182,12 @@ erDiagram
         string ProductCode
         decimal Price
         int CategoryId FK
-        ...
     }
     RefreshToken {
         int Id PK
         string Token
         string UserId FK
         datetime ExpireAt
-        ...
     }
 ```
 
@@ -222,13 +219,26 @@ erDiagram
 
 ```mermaid
 flowchart TD
-    Client -->|HTTP| API[EcoShopApi (Controllers)]
-    API -->|DTOs/Services| App[Application Layer]
-    App -->|Entities/Interfaces| Dom[Domain Layer]
-    API -->|Repos| Infra[Infrastructure Layer]
-    Infra -->|DbContext| DB[(Database)]
+    Client["Client (Angular/REST)"]
+        -->|HTTP| API["API Controllers (EcoShopApi)"]
+    API -->|Calls| App["Application Layer (Services, DTOs)"]
+    App -->|Uses| Dom["Domain Layer (Entities, Interfaces)"]
+    API -->|Uses| Infra["Infrastructure Layer (Repositories, Data)"]
+    Infra -->|EF Core| DB["SQL Server Database"]
 ```
 
----
+## 📣 Additional Notes
 
-> For questions, issues, or contributions, visit [the repository](https://github.com/MostafaElmarakpy/EcoShopApi).
+**Project Structure**
+- **Frontend:** Angular — [EcoShopClient](https://github.com/MostafaElmarakpy/EcoShopClient)
+- **Backend:** ASP.NET API — [EcoShopApi](https://github.com/MostafaElmarakpy/EcoShopApi)
+
+**Future Enhancements**
+- E-payment integration
+- Inventory management
+- Product rating system
+
+**Architecture**
+- Implements Clean Architecture principles
+- Separation of concerns
+- Enhanced testability and maintainability
