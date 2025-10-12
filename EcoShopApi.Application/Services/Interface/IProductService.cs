@@ -1,4 +1,5 @@
 ﻿using EcoShopApi.Domain.Entities;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +13,7 @@ namespace EcoShopApi.Application.Services.Interface
         Task<IReadOnlyList<Product>> GetProductsAsync();
         Task<Product> GetProductByIdAsync(int id);
 
-        void CreateProductAsync(Product productToCreate);
+        void CreateProductAsync(Product productToCreate ,IFormFile? files);
         void UpdateProductAsync(Product product);
         void DeleteProductAsync(int id);
 

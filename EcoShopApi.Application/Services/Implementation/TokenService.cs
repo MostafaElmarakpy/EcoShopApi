@@ -15,7 +15,7 @@ namespace EcoShopApi.Application.Services.Implementation
 {
     public class TokenService : ITokenService
     {
-        private readonly IConfiguration _cfg;
+        private readonly IConfiguration _cfg;   
 
         public TokenService(IConfiguration cfg) => _cfg = cfg;
 
@@ -53,7 +53,7 @@ namespace EcoShopApi.Application.Services.Implementation
                 IsRevoked = false
             };
         }
-
+        
         public bool ValidateRefreshToken(RefreshToken storedToken, string providedToken) 
         {
             var providedHash = HashToken(providedToken);

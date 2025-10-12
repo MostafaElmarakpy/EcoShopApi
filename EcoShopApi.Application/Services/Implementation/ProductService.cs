@@ -24,10 +24,20 @@ namespace EcoShopApi.Application.Services.Implementation
             return await Task.FromResult(_unitOfWork.Product.Get(p => p.Id == id));
         }
 
-        public void CreateProductAsync(Product productToCreate)
+        public void CreateProductAsync(Product productToCreate, IFormFile? files)
         {
             _unitOfWork.Product.Add(productToCreate);
             _unitOfWork.Save();
+            if(files != null)
+            {
+                var imagePath = SaveProductImageAsync(files).Result;
+                productToCreate.ImagePath = imagePath;
+                _unitOfWork.Product.Update(productToCreate);
+                _unitOfWork.Save();
+            }
+            
+           
+
         }
         public void UpdateProductAsync(Product product)
         {
