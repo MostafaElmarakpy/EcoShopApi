@@ -16,5 +16,10 @@ namespace EcoShopApi.Infrastructure.Repository
         {
             _db = db;
         }
+
+        public void Update(AppUser entity)
+        {
+            _db.Users.Update(entity);
+        }
     }
 }
