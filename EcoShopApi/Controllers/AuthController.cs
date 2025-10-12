@@ -63,13 +63,13 @@ namespace EcoShopApi.Controllers
 
             if (await _authService.EmailExistsAsync(registerDto.Email))
                 return BadRequest(new { Message = "Email is already registered" });
-
+            
             var user = new AppUser
             {
                 UserName = registerDto.UserName,
                 Email = registerDto.Email,
                 EmailConfirmed = true,
-                DisplayName = registerDto.UserName ?? registerDto.UserName
+                DisplayName = registerDto.UserName ?? registerDto.UserName,
             };
 
             var result = await _authService.CreateUserAsync(user, registerDto.Password);
@@ -96,7 +96,6 @@ namespace EcoShopApi.Controllers
                 if (!ModelState.IsValid) return BadRequest(ModelState);
 
                 var tokens = await _authService.RefreshAccessTokenAsync(request.Token);
-                //var tokens = await _authService.GenerateRefreshTokenAsync(request.Token);
 
                 if (tokens == null) return Unauthorized(new { Message = "Invalid or expired refresh token" });
 

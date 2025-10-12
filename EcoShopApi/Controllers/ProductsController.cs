@@ -1,7 +1,9 @@
-﻿using EcoShopApi.Application.Services.Interface;
+﻿using EcoShopApi.Application.Common.DTO.UserDTO;
+using EcoShopApi.Application.Services.Interface;
+using EcoShopApi.Domain.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using EcoShopApi.Domain.Entities;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System.Threading.Tasks;
 
 namespace EcoShopApi.Controllers
@@ -35,28 +37,48 @@ namespace EcoShopApi.Controllers
             }
             return Ok(product);
         }
-        [HttpPost("create-product")]
 
-        public IActionResult Create([FromBody] Product product)
+        [HttpPost]
+        public async Task<IActionResult> CreateAsync([FromForm] ProductCreateDto dto)
         {
-            _productService.CreateProductAsync(product);
+            if (!ModelState.IsValid) return BadRequest(FormatModelErrors(ModelState));
+            var product = new Product
+            {
+                Name = dto.Name,
+                ProductCode = dto.ProductCode,
+                Price = dto.Price,
+                CategoryId = dto.CategoryId,
+                // ImagePath will be handled by service (could be list of URLs)
+            };
+            _productService.CreateProductAsync(product, dto.Files);
             return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
+
         }
+
         [HttpPut("{id}")]
-        public IActionResult Update(int id, [FromBody] Product product)
+        //[Consumes("multipart/form-data")]
+        public async Task<IActionResult> UpdateAsync(int id, [FromForm] ProductUpdateDto dto)
         {
-            if (id != product.Id)
+            if (!ModelState.IsValid) return BadRequest(FormatModelErrors(ModelState));
+            if (id != dto.Id) return BadRequest(new { errors = new { id = new[] { "Id mismatch" } } });
+
+            var existingProduct = await _productService.GetProductByIdAsync(id);
+            if (existingProduct == null) return NotFound();
+
+            existingProduct.Name = dto.Name;
+            existingProduct.Price = dto.Price;
+            //existingProduct.Category = dto.Category;
+            existingProduct.ProductCode = dto.ProductCode;
+            //existingProduct.MinimumQuantity = dto.MinimumQuantity;
+            existingProduct.CategoryId = dto.CategoryId;
+            // Handle image update logic in service
+            if (dto.ExistingImages != null)
             {
-                return BadRequest();
+                existingProduct.ImagePath = dto.ExistingImages;
             }
-            try
-            {
-                _productService.UpdateProductAsync(product);
-            }
-            catch (System.Exception)
-            {
-                return NotFound();
-            }
+
+            _productService.UpdateProductAsync(existingProduct);
+
             return NoContent();
         }
         [HttpDelete("{id}")]
@@ -72,5 +94,16 @@ namespace EcoShopApi.Controllers
         }
 
 
+        private static object FormatModelErrors(ModelStateDictionary ms)
+        {
+            var errors = ms
+                .Where(kvp => kvp.Value.Errors.Count > 0)
+                .ToDictionary(
+                    kvp => kvp.Key.Replace("dto.", ""), // optional cleanup
+                    kvp => kvp.Value.Errors.Select(e => string.IsNullOrWhiteSpace(e.ErrorMessage) ? e.Exception?.Message ?? "Invalid" : e.ErrorMessage).ToArray()
+                );
+            return new { errors };
+        }
     }
+
 }
