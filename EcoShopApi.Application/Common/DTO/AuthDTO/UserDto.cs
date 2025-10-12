@@ -8,9 +8,12 @@ namespace EcoShopApi.Application.Common.DTO.UserDTO
 {
     public class UserDto
     {
+        public string Id { get; set; } = null!;
         public required string DisplayName { get; set; }
+
         public required string Email { get; set; }
         public required string Token { get; set; }
         public string? RefreshToken { get; set; }
     }
 }
+
