@@ -1,4 +1,4 @@
-﻿using EcoShopApi.Application.Common.Interfaces;
+﻿using EcoShopApi.Application.Interfaces;
 using EcoShopApi.Domain.Entities;
 using EcoShopApi.Infrastructure.Data;
 using System;

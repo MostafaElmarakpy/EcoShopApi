@@ -1,5 +1,5 @@
-using EcoShopApi.Application.Common.Interfaces;
 using EcoShopApi.Application.Common.Utility;
+using EcoShopApi.Application.Interfaces;
 using EcoShopApi.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

@@ -12,7 +12,7 @@ namespace EcoShopApi.Infrastructure.Data
 {
     public class ApplicationDbContext(DbContextOptions options) : IdentityDbContext<AppUser>(options)
     {
-        public DbSet<AppUser> appUsers => Set<AppUser>();
+        //public DbSet<AppUser> appUsers => Set<AppUser>();
         public DbSet<Product> Products => Set<Product>();
 
         public DbSet<Category> Categories { get; set; }

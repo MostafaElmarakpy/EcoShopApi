@@ -1,4 +1,4 @@
-﻿using EcoShopApi.Application.Common.Interfaces;
+﻿using EcoShopApi.Application.Interfaces;
 using EcoShopApi.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -18,18 +18,18 @@ namespace EcoShopApi.Infrastructure.Repository
         {
             _dbContext = dbContext;
             dbSet = _dbContext.Set<T>();
-        }
-        public void Add(T entity)
+        }   
+        public async Task Add(T entity)
         {
-            dbSet.Add(entity);
+            await dbSet.AddAsync(entity);
         }
 
-        public bool Any(Expression<Func<T, bool>> filter)
+        public async Task<bool> Any(Expression<Func<T, bool>> filter)
         {
-            return dbSet.Any(filter);
+            return await dbSet.AnyAsync(filter);
         }
 
-        public T Get(Expression<Func<T, bool>> filter, string? includeProperty = null)
+        public async Task<T?> Get(Expression<Func<T, bool>> filter, string? includeProperty = null)
         {
             IQueryable<T> query = dbSet;
             if (filter != null)
@@ -45,10 +45,10 @@ namespace EcoShopApi.Infrastructure.Repository
                     query = query.Include(include);
                 }
             }
-            return query.FirstOrDefault();
+            return await query.FirstOrDefaultAsync();
         }
 
-        public IEnumerable<T> GetAll(Expression<Func<T, bool>>? filter = null, string? includeProperty = null)
+        public async Task<List<T>> GetAll(Expression<Func<T, bool>>? filter = null, string? includeProperty = null)
         {
             IQueryable<T> query = dbSet;
             if (filter != null)
@@ -63,7 +63,7 @@ namespace EcoShopApi.Infrastructure.Repository
                     query = query.Include(include);
                 }
             }
-            return query.ToList();
+            return await query.AsNoTracking().ToListAsync();
         }
 
         public void Remove(T entity)

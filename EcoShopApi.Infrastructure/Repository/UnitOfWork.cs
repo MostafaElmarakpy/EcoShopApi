@@ -1,4 +1,4 @@
-﻿using EcoShopApi.Application.Common.Interfaces;
+﻿using EcoShopApi.Application.Interfaces;
 using EcoShopApi.Infrastructure.Data;
 using System;
 using System.Collections.Generic;
@@ -12,23 +12,18 @@ namespace EcoShopApi.Infrastructure.Repository
     {
         private readonly ApplicationDbContext _dbContext;
 
-        private readonly IUnitOfWork _unitOfWork;
         public IUserRepository User { get; private set; }
         public IProductRepository Product { get; private set; }
         public UnitOfWork(ApplicationDbContext dbContext)
         {
             _dbContext = dbContext;
-
             User = new UserRepository(_dbContext);
             Product = new ProductRepository(_dbContext);
 
         }
-
-
-
-        public void Save()
+        public async Task<int> Save()
         {
-            _dbContext.SaveChanges();
+           return await _dbContext.SaveChangesAsync();
         }
 
         public void Dispose()
