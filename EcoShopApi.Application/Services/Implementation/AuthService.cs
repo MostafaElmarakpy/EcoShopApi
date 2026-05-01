@@ -151,5 +151,28 @@ namespace EcoShopApi.Application.Services.Implementation
             return true;
 
         }
+        public async Task<RefreshTokenDto?> RefreshAccessTokenAsync(string refreshToken)
+        {
+            if (string.IsNullOrEmpty(refreshToken))
+                return null;
+
+            // ⚠️ Temporary logic (لازم تربطه DB بعد كده)
+            var user = await _userManager.FindByEmailAsync("test@test.com");
+
+            if (user == null)
+                return null;
+
+            var newAccessToken = await GenerateJwtTokenAsync(user);
+
+            var newRefreshToken = Guid.NewGuid().ToString();
+
+            return new RefreshTokenDto
+            {
+                DisplayName = user.UserName,
+                Email = user.Email,
+                Token = newAccessToken,
+                RefreshToken = newRefreshToken
+            };
+        }
     }
 }

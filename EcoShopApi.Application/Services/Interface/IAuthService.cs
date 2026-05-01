@@ -23,7 +23,7 @@ namespace EcoShopApi.Application.Services.Interface
         Task<string> GenerateJwtTokenAsync(AppUser user);
         Task<string> GenerateRefreshTokenAsync();
         Task<bool> LogoutAsync(string userId, string RefreshToken);
-
+        Task<RefreshTokenDto?> RefreshAccessTokenAsync(string refreshToken);
 
     }
 

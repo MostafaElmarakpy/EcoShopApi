@@ -73,12 +73,12 @@ namespace EcoShopApi.Controllers
                 DisplayName = registerDto.UserName ?? registerDto.UserName,
             };
 
-            var result = await _authService.CreateUserAsync(user, registerDto.Password);
+            //var result = await _authService.CreateUserAsync(user, registerDto.Password);
 
-            if (!result.Succeeded)
-            {
-                return BadRequest(new { Errors = result.Errors.Select(e => e.Description) });
-            }
+            //if (!result.Succeeded)
+            //{
+            //    return BadRequest(new { Errors = result.Errors.Select(e => e.Description) });
+            //}
 
             return Ok(new UserDto
             {
@@ -89,30 +89,30 @@ namespace EcoShopApi.Controllers
         }
 
 
-        [HttpPost("refresh-token")]
-        public async Task<IActionResult> RefreshToken([FromBody] RefreshToken request)
-        {
-            try
-            {
-                if (!ModelState.IsValid) return BadRequest(ModelState);
+        //[HttpPost("refresh-token")]
+        //public async Task<IActionResult> RefreshToken([FromBody] RefreshToken request)
+        //{
+        //    try
+        //    {
+        //        if (!ModelState.IsValid) return BadRequest(ModelState);
 
-                var tokens = await _authService.RefreshAccessTokenAsync(request.Token);
+        //        var tokens = await _authService.RefreshTokenAsync(request.Token, request.RefreshToken);
 
-                if (tokens == null) return Unauthorized(new { Message = "Invalid or expired refresh token" });
+        //        if (tokens == null) return Unauthorized(new { Message = "Invalid or expired refresh token" });
 
-                return Ok(new UserDto
-                {
-                    DisplayName = tokens.DisplayName,
-                    Email = tokens.Email,
-                    Token = tokens.Token,
-                    RefreshToken = tokens.RefreshToken
-                });
-            }
-            catch (Exception ex)
-            {
-                return Problem(ex.Message);
-            }
-        }
+        //        return Ok(new UserDto
+        //        {
+        //            DisplayName = tokens.DisplayName,
+        //            Email = tokens.Email,
+        //            Token = tokens.Token,
+        //            RefreshToken = tokens.RefreshToken
+        //        });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return Problem(ex.Message);
+        //    }
+        //}
 
 
 
