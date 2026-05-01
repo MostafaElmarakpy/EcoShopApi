@@ -1,143 +1,224 @@
-﻿using EcoShopApi.Application.Common.Interfaces;
+﻿using EcoShopApi.Application.Interfaces;
 using EcoShopApi.Application.Services.Interface;
 using EcoShopApi.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Hosting;
+using EcoShopApi.Domain.Exceptions;
 using Microsoft.AspNetCore.Http;
-namespace EcoShopApi.Application.Services.Implementation
+using Microsoft.Extensions.Logging;
+
+namespace EcoShopApi.Application.Services.Implementation;
+
+/// <summary>
+/// Product service with corrected async patterns and better error handling.
+/// </summary>
+public class ProductService : IProductService
 {
-    public class ProductService : IProductService
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly ILogger<ProductService> _logger;
+    private const long MaxFileSize = 5 * 1024 * 1024; // 5MB
+    private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".gif" };
+
+    public ProductService(IUnitOfWork unitOfWork, ILogger<ProductService> logger)
     {
-        private readonly IUnitOfWork _unitOfWork;
+        _unitOfWork = unitOfWork;
+        _logger = logger;
+    }
 
-        public ProductService(IUnitOfWork unitOfWork)
+    /// <summary>
+    /// Gets a product by ID. Returns null if not found (no exception).
+    /// </summary>
+    public async Task<Product?> GetProductByIdAsync(int id)
+    {
+        try
         {
-            _unitOfWork = unitOfWork;
+            var product = await _unitOfWork.Product.Get(p => p.Id == id);
+            return product;
         }
-        public async Task<Product> GetProductByIdAsync(int id)
+        catch (Exception ex)
         {
-            return await Task.FromResult(_unitOfWork.Product.Get(p => p.Id == id));
+            _logger.LogError(ex, "Error retrieving product with ID {ProductId}", id);
+            throw;
         }
+    }
 
-        public void CreateProductAsync(Product productToCreate, IFormFile? files)
+    /// <summary>
+    /// Creates a product with optional image upload.
+    /// Now fully async - no .Result blocking calls.
+    /// </summary>
+    public async Task CreateProductAsync(Product productToCreate, IFormFile? files)
+    {
+        try
         {
-            _unitOfWork.Product.Add(productToCreate);
-            _unitOfWork.Save();
-            if(files != null)
+            // Save product first
+            await _unitOfWork.Product.Add(productToCreate);
+            await _unitOfWork.Save();
+
+            // Then save image if provided
+            if (files != null)
             {
-                var imagePath = SaveProductImageAsync(files).Result;
-                productToCreate.ImagePath = imagePath;
-                _unitOfWork.Product.Update(productToCreate);
-                _unitOfWork.Save();
+                var imagePath = await SaveProductImageAsync(files); // ✅ Proper await
+                if (!string.IsNullOrEmpty(imagePath))
+                {
+                    productToCreate.ImagePath = imagePath;
+                    _unitOfWork.Product.Update(productToCreate);
+                    await _unitOfWork.Save();
+                }
             }
-            
-           
 
+            _logger.LogInformation("Product created: {ProductId}", productToCreate.Id);
         }
-        public void UpdateProductAsync(Product product)
+        catch (Exception ex)
         {
-            var existingProduct = _unitOfWork.Product.Get(p => p.Id == product.Id);
+            _logger.LogError(ex, "Error creating product");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Updates an existing product with new image if provided.
+    /// </summary>
+    public async Task UpdateProductAsync(Product product)
+    {
+        try
+        {
+            var existingProduct = await _unitOfWork.Product.Get(p => p.Id == product.Id);
             if (existingProduct == null)
             {
-                throw new Exception("Product not found");
+                throw new ProductNotFoundException(product.Id);
             }
+
+            // Update product properties
             existingProduct.Name = product.Name;
             existingProduct.Price = product.Price;
+            existingProduct.ProductCode = product.ProductCode;
+            existingProduct.CategoryId = product.CategoryId;
+            existingProduct.MinimumQuantity = product.MinimumQuantity;
+            existingProduct.DiscountRate = product.DiscountRate;
+
+            // Handle image updates (if new image provided via domain)
+            // Note: Better approach would be to pass IFormFile through DTO
             if (product.ImagePath != null)
             {
                 existingProduct.ImagePath = product.ImagePath;
             }
-            var oldImagePath = existingProduct.ImagePath;
-            if (oldImagePath != null && product.Image != null)
-            {
-                // Delete old image
-                DeleteImage(oldImagePath);
-                // Save new image
-                var newImagePath = SaveProductImageAsync(product.Image).Result;
-            }
-            existingProduct.Category = product.Category;
-            existingProduct.ProductCode = product.ProductCode;
-            existingProduct.MinimumQuantity = product.MinimumQuantity;
-            existingProduct.DiscountRate = product.DiscountRate;
-            existingProduct.ImagePath = product.ImagePath;
-            existingProduct.CategoryId = product.CategoryId;
 
             _unitOfWork.Product.Update(existingProduct);
-            _unitOfWork.Save();
+            await _unitOfWork.Save();
+            _logger.LogInformation("Product updated: {ProductId}", product.Id);
         }
-        public void DeleteProductAsync(int id)
+        catch (Exception ex)
         {
-            var product = _unitOfWork.Product.Get(p => p.Id == id);
+            _logger.LogError(ex, "Error updating product {ProductId}", product.Id);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Deletes a product by ID.
+    /// Now properly async (was async void - ANTI-PATTERN).
+    /// </summary>
+    public async Task DeleteProductAsync(int id)
+    {
+        try
+        {
+            var product = await _unitOfWork.Product.Get(p => p.Id == id);
             if (product == null)
             {
-                throw new Exception("Product not found");
+                throw new ProductNotFoundException(id);
             }
+
+            // Delete associated image
+            if (!string.IsNullOrEmpty(product.ImagePath))
+            {
+                await DeleteImageAsync(product.ImagePath);
+            }
+
             _unitOfWork.Product.Remove(product);
-            _unitOfWork.Save();
-
-
+            await _unitOfWork.Save();
+            _logger.LogInformation("Product deleted: {ProductId}", id);
         }
-        public async Task<IReadOnlyList<Product>> GetProductsAsync()
+        catch (Exception ex)
         {
-            return await Task.FromResult(_unitOfWork.Product.GetAll().ToList());
+            _logger.LogError(ex, "Error deleting product {ProductId}", id);
+            throw;
         }
-       
-        private void DeleteImage(string imagePath)
+    }
+
+    public async Task<IReadOnlyList<Product>> GetProductsAsync()
+    {
+        try
         {
-            if (string.IsNullOrEmpty(imagePath))
-                return;
+            var products = await _unitOfWork.Product.GetAll();
+            return products;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving all products");
+            throw;
+        }
+    }
 
-            string fullPath = Path.Combine(Directory.GetCurrentDirectory(), imagePath.TrimStart('/'));
+    private async Task DeleteImageAsync(string imagePath)
+    {
+        if (string.IsNullOrEmpty(imagePath))
+            return;
 
+        try
+        {
+            var fullPath = Path.Combine(Directory.GetCurrentDirectory(), imagePath.TrimStart('/'));
             if (File.Exists(fullPath))
             {
                 File.Delete(fullPath);
+                _logger.LogInformation("Image deleted: {ImagePath}", fullPath);
             }
         }
-        public async Task<string?> SaveProductImageAsync(IFormFile image)
+        catch (Exception ex)
         {
-            if (image == null || image.Length == 0)
-                return null;
+            _logger.LogError(ex, "Error deleting image: {ImagePath}", imagePath);
+            // Don't rethrow - image deletion shouldn't fail product deletion
+        }
+    }
 
-            // Validate file size (5MB limit)
-            const long maxFileSize = 5 * 1024 * 1024; // 5MB
-            if (image.Length > maxFileSize)
-            {
-                throw new InvalidOperationException("File size exceeds 5MB limit.");
-            }
+    /// <summary>
+    /// Saves a product image asynchronously to the wwwroot/images directory.
+    /// </summary>
+    private async Task<string?> SaveProductImageAsync(IFormFile image)
+    {
+        if (image == null || image.Length == 0)
+            return null;
 
-            // Validate file format
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
-            var fileExtension = Path.GetExtension(image.FileName).ToLowerInvariant();
-            if (!allowedExtensions.Contains(fileExtension))
-            {
-                throw new InvalidOperationException("Only .jpg, .png, and .gif files are allowed.");
-            }
+        if (image.Length > MaxFileSize)
+        {
+            throw new InvalidOperationException("File size exceeds 5MB limit.");
+        }
 
-            // Create uploads directory if it doesn't exist
-            var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
-            if (!Directory.Exists(uploadsPath))
-            {
-                Directory.CreateDirectory(uploadsPath);
-            }
+        var fileExtension = Path.GetExtension(image.FileName).ToLowerInvariant();
+        if (!AllowedExtensions.Contains(fileExtension))
+        {
+            throw new InvalidOperationException("Only .jpg, .png, and .gif files are allowed.");
+        }
 
-            // Generate unique filename
-            var fileName = Guid.NewGuid() + fileExtension;
-            var filePath = Path.Combine(uploadsPath, fileName);
+        var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
+        if (!Directory.Exists(uploadsPath))
+        {
+            Directory.CreateDirectory(uploadsPath);
+        }
 
-            // Save file asynchronously
+        var fileName = $"{Guid.NewGuid()}{fileExtension}";
+        var filePath = Path.Combine(uploadsPath, fileName);
+
+        try
+        {
             using (var stream = new FileStream(filePath, FileMode.Create))
             {
                 await image.CopyToAsync(stream);
             }
-
-            // Return relative URL path
+            _logger.LogInformation("Image saved: {FileName}", fileName);
             return $"/images/{fileName}";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving image: {FileName}", fileName);
+            throw;
         }
     }
 }

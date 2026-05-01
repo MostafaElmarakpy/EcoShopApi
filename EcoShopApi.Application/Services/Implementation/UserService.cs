@@ -1,5 +1,5 @@
-﻿using EcoShopApi.Application.Common.DTO.UserDTO;
-using EcoShopApi.Application.Common.Interfaces;
+﻿using EcoShopApi.Application.Interfaces;
+using EcoShopApi.Application.DTO.UserDTO;
 using EcoShopApi.Application.Services.Interface;
 using EcoShopApi.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
@@ -92,9 +92,7 @@ namespace EcoShopApi.Application.Services.Implementation
                 DisplayName = dto.FullName,
 
             };
-
             return _userManager.CreateAsync(user, dto.Password);
-
         }
 
         public Task<IdentityResult> UpdateUserAsync(string id, UpdateUserDto dtol)
@@ -113,8 +111,15 @@ namespace EcoShopApi.Application.Services.Implementation
 
         }
 
+        public Task<bool> ChangePasswordAsync(string userId, ChangePasswordDto dto)
+        {
+            throw new NotImplementedException();
+        }
 
-
+        public Task<bool> ChangeUsernameAsync(string userId, UpdateUsernameDto dto)
+        {
+            throw new NotImplementedException();
+        }
     }
 
 }
