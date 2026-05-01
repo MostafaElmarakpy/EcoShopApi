@@ -1,4 +1,4 @@
-﻿using EcoShopApi.Application.Common.DTO.UserDTO;
+﻿using EcoShopApi.Application.DTO.ProductDto;
 using EcoShopApi.Application.Services.Interface;
 using EcoShopApi.Domain.Entities;
 using Microsoft.AspNetCore.Http;
@@ -8,8 +8,8 @@ using System.Threading.Tasks;
 
 namespace EcoShopApi.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
     public class ProductsController : ControllerBase
     {
         private readonly IProductService _productService;
@@ -39,25 +39,23 @@ namespace EcoShopApi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateAsync([FromForm] ProductCreateDto dto)
-        {
-            if (!ModelState.IsValid) return BadRequest(FormatModelErrors(ModelState));
-            var product = new Product
+            public async Task<IActionResult> CreateAsync([FromBody] ProductCreateDto dto)
             {
-                Name = dto.Name,
-                ProductCode = dto.ProductCode,
-                Price = dto.Price,
-                CategoryId = dto.CategoryId,
-                // ImagePath will be handled by service (could be list of URLs)
-            };
-            _productService.CreateProductAsync(product, dto.Files);
-            return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
-
-        }
+                if (!ModelState.IsValid) return BadRequest(FormatModelErrors(ModelState));
+                var product = new Product
+                {
+                    Name = dto.Name,
+                    ProductCode = dto.ProductCode,
+                    Price = dto.Price,
+                    CategoryId = dto.CategoryId,
+                };
+                await _productService.CreateProductAsync(product, dto.Files); // ✅ Now awaited
+                return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
+            }
 
         [HttpPut("{id}")]
         //[Consumes("multipart/form-data")]
-        public async Task<IActionResult> UpdateAsync(int id, [FromForm] ProductUpdateDto dto)
+        public async Task<IActionResult> UpdateAsync(int id, [FromBody] ProductUpdateDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(FormatModelErrors(ModelState));
             if (id != dto.Id) return BadRequest(new { errors = new { id = new[] { "Id mismatch" } } });
@@ -81,17 +79,18 @@ namespace EcoShopApi.Controllers
 
             return NoContent();
         }
+
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
-        {
-            var product = _productService.GetProductByIdAsync(id).Result;
-            if (product == null)
+            public async Task<IActionResult> Delete(int id)
             {
-                return NotFound();
+                var product = await _productService.GetProductByIdAsync(id); // ✅ Now async
+                if (product == null)
+                {
+                    return NotFound();
+                }
+                await _productService.DeleteProductAsync(id); // ✅ Now awaited
+                return NoContent();
             }
-            _productService.DeleteProductAsync(id);
-            return NoContent();
-        }
 
 
         private static object FormatModelErrors(ModelStateDictionary ms)

@@ -1,144 +1,135 @@
-using EcoShopApi.Application.Common.Interfaces;
-using EcoShopApi.Application.Services.Implementation;
 using EcoShopApi.Application.Services.Interface;
-using EcoShopApi.Domain.Entities;
+using EcoShopApi.Application.Services.Implementation;
+using EcoShopApi.Application.Mapping;
 using EcoShopApi.Infrastructure.Data;
 using EcoShopApi.Infrastructure.Repository;
-using EcoShopApi.Middlewares;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using EcoShopApi.Application.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Microsoft.IdentityModel.Tokens;
-using System;
-using System.Reflection;
-using System.Text;
+using Microsoft.OpenApi.Models;
+using EcoShopApi.Domain.Entities;
+using EcoShopApi.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1) Register services (DbContext, Identity, Repos, Services, etc.)
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// Add services to the container
+builder.Services.AddControllers();
 
-// Identity (ensure AppUser type and ApplicationDbContext are correct)
+// Add DbContext with connection string from configuration
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(connectionString));
+
+// Add ASP.NET Identity
 builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
 {
-    options.Password.RequireDigit = true;
-    options.Password.RequiredLength = 8;
+    options.Password.RequiredLength = 6;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
 
-// Configure JWT auth
-var jwtCfg = builder.Configuration.GetSection("Jwt");
-var key = Encoding.UTF8.GetBytes(jwtCfg["Key"] ?? throw new InvalidOperationException("Jwt:Key missing"));
+// Add AutoMapper
+builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
-
-builder.Services.AddCors(options =>
-  options.AddPolicy("AllowAngularDev", policy =>
-    policy.WithOrigins("http://localhost:4200", "https://localhost:4200")
-          .AllowAnyHeader()
-          .AllowAnyMethod()
-          .AllowCredentials()
-  )
-);
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtCfg["Issuer"],
-        ValidAudience = jwtCfg["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(key),
-        ClockSkew = TimeSpan.FromMinutes(1)
-    };
-});
-
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
-        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
-    });
-
-// Register application services / repositories
+// Add Repository and Services
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-builder.Services.AddScoped(typeof(IGenaricRepository<>), typeof(GenaricRepository<>));
-builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IProductRepository, ProductRepository>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IDbInitializer, DbInitializer>();
 
+// Add JWT Authentication
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+var key = System.Text.Encoding.UTF8.GetBytes(jwtSettings["Key"] 
+    ?? throw new InvalidOperationException("JWT Key not configured"));
 
+builder.Services.AddAuthentication("Bearer")
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(key),
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+
+// Add Swagger
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "EcoShop API",
+        Version = "v1",
+        Description = "Eco-friendly products e-commerce API"
+    });
 
+    // Add JWT bearer token support to Swagger
+    var securityScheme = new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "JWT Authorization header using the Bearer scheme"
+    };
+
+    options.AddSecurityDefinition("Bearer", securityScheme);
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        { new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" } }, Array.Empty<string>() }
+    });
+});
+
+// Add CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
+});
 
 var app = builder.Build();
 
-//Apply migrations & seed database using app.Services (after Build)
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    var loggerFactory = services.GetRequiredService<ILoggerFactory>();
-    var logger = loggerFactory.CreateLogger<Program>();
-    try
-    {
-        var context = services.GetRequiredService<ApplicationDbContext>();
-        var dbInitializer = services.GetRequiredService<IDbInitializer>();
-
-        // apply pending migrations
-        context.Database.Migrate();
-
-        // call seeding initializer (make it synchronous or use async/Wait if needed)
-        dbInitializer.Initialize();
-    }
-    catch (Exception ex)
-    {
-        //var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while migrating or initializing the database.");
-        // Optionally: if you want to inspect loader exceptions (ReflectionTypeLoadException)
-        if (ex is ReflectionTypeLoadException rtle)
-        {
-            foreach (var le in rtle.LoaderExceptions)
-            {
-                logger.LogError("LoaderException: {Message}", le.Message);
-            }
-        }
-    }
-}
-
-// Middleware and HTTP pipeline
-app.UseMiddleware<ExceptionMiddleware>();
-
+// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-
 }
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+app.UseCors("AllowAll");
 
-app.UseRouting();
+// Add custom exception middleware
+app.UseMiddleware<ExceptionMiddleware>();
 
-app.UseCors("AllowAngularDev");
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
+// Initialize database
+using (var scope = app.Services.CreateScope())
+{
+    var dbInitializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
+    dbInitializer.Initialize();
+}
+
 app.Run();
+
+public partial class Program { }

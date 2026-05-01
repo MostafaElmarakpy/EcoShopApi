@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using EcoShopApi.Domain.Entities;
 using System.Threading.Tasks;
 using EcoShopApi.Application.Services.Implementation;
-using EcoShopApi.Application.Common.DTO.UserDTO;
+using EcoShopApi.Application.DTO.UserDTO;
 
 namespace EcoShopApi.Controllers
 {
@@ -71,7 +71,7 @@ namespace EcoShopApi.Controllers
             }
         }
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(string id)
+        public async Task<IActionResult> DeleteUser([FromBody] string id)
         {
             try
             {

@@ -1,5 +1,6 @@
-﻿using EcoShopApi.Application.Common.DTO.UserDTO;
-using EcoShopApi.Application.Common.Interfaces;
+﻿using EcoShopApi.Application.DTO.ProductDto;
+using EcoShopApi.Application.Interfaces;
+using EcoShopApi.Application.DTO.AuthDTO;
 using EcoShopApi.Application.Services.Interface;
 using EcoShopApi.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
