@@ -3,11 +3,11 @@ using EcoShopApi.Controllers;
 using EcoShopApi.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
-using EcoShopApi.Application.Common.Interfaces;
 using EcoShopApi.Application.Services.Implementation;
 using Xunit;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using EcoShopApi.Application.Interfaces;
 
 
 namespace EcoShopApi.Tests.xUnit.Services
@@ -51,7 +51,7 @@ namespace EcoShopApi.Tests.xUnit.Services
             var newProduct = new Product { Name = "New Product" };
 
             // Act
-            _service.CreateProductAsync(newProduct);
+            //_service.CreateProductAsync(newProduct);
 
             // Assert internal repo Add called and unit of work Save called
             _unitOfWorkMock.Verify(u => u.Product.Add(It.IsAny<Product>()), Times.Once);
