@@ -103,7 +103,8 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
-
+app.UseRateLimiter();
+app.UseHealthChecks("/health");
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {

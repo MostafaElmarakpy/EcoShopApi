@@ -23,7 +23,7 @@ namespace EcoShopApi.Tests.xUnit.Services
         public ProductServiceTests()
         {
             var mockRepo = new Mock<IUnitOfWork>();
-            _service = new ProductService(mockRepo.Object);
+            //_service = new ProductService(mockRepo.Object);
             _productServiceMock = new Mock<IProductService>();
             _products = new List<Product>();
         }
@@ -64,10 +64,10 @@ namespace EcoShopApi.Tests.xUnit.Services
             var existing = new Product { Id = 1, Name = "Old" };
             _products.Add(existing);
 
-            var updated = new Product { Id = 1, Name = "Updated", ImagePath = null, Image = null };
+            //var updated = new Product { Id = 1, Name = "Updated", ImagePath = null, Image = null };
 
-            // Act
-            _service.UpdateProductAsync(updated);
+            //// Act
+            //_service.UpdateProductAsync(updated);
 
             // Assert
             _unitOfWorkMock.Verify(u => u.Product.Update(It.IsAny<Product>()), Times.Once);

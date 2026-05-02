@@ -68,7 +68,7 @@ EcoShopApi.Domain (Core Business Rules)
 
 ### ✅ Completed Changes
 
-1. ✅ **Fixed target framework inconsistency** (net10.0 → net9.0 for all projects)
+1. ✅ **Fixed target framework inconsistency** (net9.0 → net10.0 for all projects)
 2. ✅ **Created Result<T> error abstraction** (EcoShopApi.Application/Common/Result.cs)
 3. ✅ **Created domain exceptions** (ProductNotFoundException, CategoryNotFoundException)
 4. ✅ **Fixed IProductService async contracts** (all methods now properly async)
