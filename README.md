@@ -4,7 +4,7 @@
 
 ## 📝 Project Overview & Purpose
 
-**EcoShopApi** is a modern, extensible RESTful API for e-commerce, designed as a backend for online stores. Built with **ASP.NET Core 9** using Clean Architecture, it provides endpoints for product management, user authentication, category management, and order processing. The project is ideal for developers and businesses looking for a scalable, secure, and cleanly-architected foundation for e-commerce solutions.
+**EcoShopApi** is a modern, extensible RESTful API for e-commerce, designed as a backend for online stores. Built with **ASP.NET Core 10** using Clean Architecture, it provides endpoints for product management, user authentication, category management, and order processing. The project is ideal for developers and businesses looking for a scalable, secure, and cleanly-architected foundation for e-commerce solutions.
 
 ---
 
@@ -26,18 +26,18 @@
 ## 🛠️ Technical Stack & Dependencies
 
 **Frameworks & Runtimes**
-- ASP.NET Core 9.0
-- Entity Framework Core 9.0.9
-- .NET 9.0
+- ASP.NET Core 10.0
+- Entity Framework Core 10.0.9
+- .NET 10.0
 
 **Authentication & Identity**
-- Microsoft.AspNetCore.Identity.EntityFrameworkCore 9.0.9
-- JWT: Microsoft.AspNetCore.Authentication.JwtBearer 9.0.9
+- Microsoft.AspNetCore.Identity.EntityFrameworkCore 10.0.9
+- JWT: Microsoft.AspNetCore.Authentication.JwtBearer 10.0.9
 - Microsoft.IdentityModel.Tokens 8.14.0
 - System.IdentityModel.Tokens.Jwt 8.0.1
 
 **Documentation & Utilities**
-- Swashbuckle.AspNetCore (Swagger) 9.0.4
+- Swashbuckle.AspNetCore (Swagger) 10.0.4
 
 **Testing**
 - xUnit 2.9.2
